@@ -8,6 +8,26 @@ function firstNonEmpty(...values) {
     return "";
 }
 
+// O front-end (getUtmData() em checkout/script.js) grava as chaves com o prefixo
+// utm_ (utm_source, utm_campaign...). Versoes antigas gravavam sem prefixo.
+// Lemos as duas convencoes para nao enviar UTM vazia ao gateway.
+function resolveUtmData(utm) {
+    const data = utm || {};
+
+    const pick = (name) => firstNonEmpty(data[`utm_${name}`], data[name]);
+
+    return {
+        source: pick("source"),
+        medium: pick("medium"),
+        campaign: pick("campaign"),
+        content: pick("content"),
+        term: pick("term"),
+        fbclid: firstNonEmpty(data.fbclid, data.utm_fbclid),
+        ttclid: firstNonEmpty(data.ttclid, data.utm_ttclid),
+        gclid: firstNonEmpty(data.gclid, data.utm_gclid)
+    };
+}
+
 function resolvePixVisualData(transaction) {
     const pix = transaction?.pix || {};
 
@@ -82,16 +102,7 @@ export default async function handler(req, res) {
 
                 external_reference: sessionId,
 
-                utm: {
-                    source: utm?.source || "",
-                    medium: utm?.medium || "",
-                    campaign: utm?.campaign || "",
-                    content: utm?.content || "",
-                    term: utm?.term || "",
-                    fbclid: utm?.fbclid || "",
-                    ttclid: utm?.ttclid || "",
-                    gclid: utm?.gclid || ""
-                }
+                utm: resolveUtmData(utm)
             })
         });
 
